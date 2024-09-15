@@ -2,8 +2,8 @@ import RPi.GPIO as GPIO
 import time
 
 # Define GPIO pins for the ultrasonic sensor
-TRIG = 27  # Trigger pin (using GPIO 27)
-ECHO = 4   # Echo pin (using GPIO 4)
+TRIG = 23  # Trigger pin (using GPIO 27)
+ECHO = 24   # Echo pin (using GPIO 4)
 
 # Set up GPIO mode
 GPIO.setmode(GPIO.BCM)

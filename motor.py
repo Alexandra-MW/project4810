@@ -11,8 +11,8 @@ ENA = 12  # GPIO 12 (Enable pin for motor 1)
 
 # Define GPIO pins for motor 2
 IN3 = 22  # GPIO 22
-IN4 = 23  # GPIO 23
-ENB = 13  # GPIO 13 (Enable pin for motor 2)
+IN4 = 4  # GPIO 23
+ENB = 18 # GPIO 13 (Enable pin for motor 2)
 
 # Set up GPIO pins as outputs
 GPIO.setup(IN1, GPIO.OUT)
@@ -54,16 +54,16 @@ def drive_motor2_backward():
 
 try:
     # Test motor 1 forward and backward
-    #drive_motor1_forward()
-    #time.sleep(5)
-    #drive_motor1_backward()
-    #time.sleep(5)
+    drive_motor1_forward()
+    time.sleep(5)
+    drive_motor1_backward()
+    time.sleep(5)
     
     # Test motor 2 forward and backward
     drive_motor2_forward()
     time.sleep(5)
-    #drive_motor2_backward()
-    #time.sleep(5)
+    drive_motor2_backward()
+    time.sleep(5)
 
 finally:
     # Stop PWM and clean up GPIO settings
