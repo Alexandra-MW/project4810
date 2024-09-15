@@ -6,7 +6,7 @@ GPIO.setmode(GPIO.BCM)
 
 # Define GPIO pins for motor 1
 IN1 = 17  # GPIO 17
-IN2 = 18  # GPIO 18
+IN2 = 27  # GPIO 27
 ENA = 12  # GPIO 12 (Enable pin for motor 1)
 
 # Define GPIO pins for motor 2
@@ -54,16 +54,16 @@ def drive_motor2_backward():
 
 try:
     # Test motor 1 forward and backward
-    drive_motor1_forward()
-    time.sleep(5)
-    drive_motor1_backward()
-    time.sleep(5)
+    #drive_motor1_forward()
+    #time.sleep(5)
+    #drive_motor1_backward()
+    #time.sleep(5)
     
     # Test motor 2 forward and backward
     drive_motor2_forward()
     time.sleep(5)
-    drive_motor2_backward()
-    time.sleep(5)
+    #drive_motor2_backward()
+    #time.sleep(5)
 
 finally:
     # Stop PWM and clean up GPIO settings
