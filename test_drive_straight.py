@@ -117,6 +117,8 @@ try:
     distance_readings = deque(maxlen=5)
     last_valid_distance = None
     max_change_threshold = 3
+    calibration_count = 5  # Number of initial readings to ignore
+    calibration_phase = True
     
     # Start the motors driving forward at 50% speed
     drive_forward(100)
