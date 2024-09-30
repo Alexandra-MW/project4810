@@ -1,4 +1,5 @@
 import RPi.GPIO as GPIO
+from collections import deque
 import time
 
 # Motor GPIO pin setup
@@ -111,6 +112,10 @@ def measure_distance2():
     return distance
 
 try:
+    desired_distance = 10
+    kp = 2
+    distance_readings = deque(maxlen=5)
+    
     # Start the motors driving forward at 50% speed
     drive_forward(100)
     print("Motors driving forward at 100% speed")
@@ -121,29 +126,25 @@ try:
         distance2 = measure_distance2()
         print(f"Distance: {distance1:.2f} cm")
         print(f"Distance: {distance2:.2f} cm")
+
+        distance_readings.append(distance2)
+        average_distance = sum(distance_readings)/len(distance_readings)
+        wall_error = average_distance - desired_distance
+        adjustment = kp * wall_error
+
+        # Adjust motor speeds within the high range, ensuring they remain at or near 100%
+        right_motor_speed = 100 - min(max(adjustment, -20), 20)  # Adjust between 80% to 100%
+        left_motor_speed = 100 + min(max(adjustment, -20), 20)
+        
+        # Ensure PWM values are within 0 to 100 range
+        right_motor_speed = max(0, min(100, right_motor_speed))
+        left_motor_speed = max(0, min(100, left_motor_speed))
+
+        # Set the PWM duty cycle to adjust motor speeds
+        pwm1.ChangeDutyCycle(right_motor_speed)
+        pwm2.ChangeDutyCycle(left_motor_speed)
         
         if distance1 < 20:
-            print("Obstacle detected! Stopping motors.")
-            stop_motors()
-            break
-        time.sleep(0.1)
-
-    # Turn around 180 degrees
-    print("Turning around...")
-    turn_around(100, 2)  # Adjust duration as needed for a 180-degree turn
-    stop_motors()
-    print("Turn complete.")
-
-    # Drive back in the other direction
-    print("Driving back in the other direction.")
-    drive_forward(100)
-
-    # Drive forward until an obstacle is detected within 20 cm
-    while True:
-        dist = measure_distance()
-        print(f"Distance: {dist:.2f} cm")
-        
-        if dist < 20:
             print("Obstacle detected! Stopping motors.")
             stop_motors()
             break
