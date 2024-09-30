@@ -75,7 +75,7 @@ def measure_distance():
 
 try:
     # Start the motors driving forward at 50% speed
-    drive_forward(50)
+    drive_forward(100)
     print("Motors driving forward at 50% speed")
 
     while True:

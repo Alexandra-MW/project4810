@@ -87,15 +87,15 @@ def measure_distance():
 
 try:
     # Start the motors driving forward at 50% speed
-    drive_forward(50)
-    print("Motors driving forward at 50% speed")
+    drive_forward(100)
+    print("Motors driving forward at 100% speed")
 
     # Drive forward until an obstacle is detected within 20 cm
     while True:
         dist = measure_distance()
         print(f"Distance: {dist:.2f} cm")
         
-        if dist < 20:
+        if dist < 30:
             print("Obstacle detected! Stopping motors.")
             stop_motors()
             break
@@ -103,13 +103,13 @@ try:
 
     # Turn around 180 degrees
     print("Turning around...")
-    turn_around(50, 2)  # Adjust duration as needed for a 180-degree turn
+    turn_around(100, 2)  # Adjust duration as needed for a 180-degree turn
     stop_motors()
     print("Turn complete.")
 
     # Drive back in the other direction
     print("Driving back in the other direction.")
-    drive_forward(50)
+    drive_forward(100)
 
     # Drive forward until an obstacle is detected within 20 cm
     while True:
