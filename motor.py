@@ -11,7 +11,7 @@ ENA = 12  # GPIO 12 (Enable pin for motor 1)
 
 # Define GPIO pins for motor 2
 IN3 = 22  # GPIO 22
-IN4 = 4  # GPIO 23
+IN4 = 24  # GPIO 23
 ENB = 18 # GPIO 13 (Enable pin for motor 2)
 
 # Set up GPIO pins as outputs
