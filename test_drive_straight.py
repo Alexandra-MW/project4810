@@ -136,22 +136,21 @@ try:
         else:
             print(f"Ignored outlier reading: {distance2:.2f} cm")
 
-        if len(distance_readings) > 0:
-            average_distance = sum(distance_readings)/len(distance_readings)
-            wall_error = average_distance - desired_distance
-            adjustment = kp * wall_error
+        average_distance = sum(distance_readings)/len(distance_readings)
+        wall_error = average_distance - desired_distance
+        adjustment = kp * wall_error
     
-            # Adjust motor speeds within the high range, ensuring they remain at or near 100%
-            right_motor_speed = 100 - min(max(adjustment, -20), 20)  # Adjust between 80% to 100%
-            left_motor_speed = 100 + min(max(adjustment, -20), 20)
+        # Adjust motor speeds within the high range, ensuring they remain at or near 100%
+        right_motor_speed = 100 - min(max(adjustment, -20), 20)  # Adjust between 80% to 100%
+        left_motor_speed = 100 + min(max(adjustment, -20), 20)
             
-            # Ensure PWM values are within 0 to 100 range
-            right_motor_speed = max(0, min(100, right_motor_speed))
-            left_motor_speed = max(0, min(100, left_motor_speed))
+        # Ensure PWM values are within 0 to 100 range
+        right_motor_speed = max(0, min(100, right_motor_speed))
+        left_motor_speed = max(0, min(100, left_motor_speed))
     
-            # Set the PWM duty cycle to adjust motor speeds
-            pwm1.ChangeDutyCycle(right_motor_speed)
-            pwm2.ChangeDutyCycle(left_motor_speed)
+        # Set the PWM duty cycle to adjust motor speeds
+        pwm1.ChangeDutyCycle(right_motor_speed)
+        pwm2.ChangeDutyCycle(left_motor_speed)
         
         if distance1 < 20:
             print("Obstacle detected! Stopping motors.")
