@@ -69,18 +69,39 @@ def turn_around(speed, duration):
     time.sleep(duration)  # Run this for a set duration to achieve 180-degree turn
 
 # Function to measure distance using the ultrasonic sensor
-def measure_distance(TRIG, ECHO):
+def measure_distance1():
     # Set Trigger to HIGH
-    GPIO.output(TRIG, True)
+    GPIO.output(TRIG1, True)
     # Set Trigger to LOW after 10 microseconds
     time.sleep(0.00001)
-    GPIO.output(TRIG, False)
+    GPIO.output(TRIG1, False)
 
     # Measure the time for the Echo pin to go HIGH
-    while GPIO.input(ECHO) == 0:
+    while GPIO.input(ECHO1) == 0:
         start_time = time.time()
 
-    while GPIO.input(ECHO) == 1:
+    while GPIO.input(ECHO1) == 1:
+        end_time = time.time()
+
+    # Calculate the distance based on the speed of sound
+    elapsed_time = end_time - start_time
+    distance = (elapsed_time * 34300) / 2  # Speed of sound is 34300 cm/s
+
+    return distance
+
+# Function to measure distance using the ultrasonic sensor
+def measure_distance2():
+    # Set Trigger to HIGH
+    GPIO.output(TRIG2, True)
+    # Set Trigger to LOW after 10 microseconds
+    time.sleep(0.00001)
+    GPIO.output(TRIG2, False)
+
+    # Measure the time for the Echo pin to go HIGH
+    while GPIO.input(ECHO2) == 0:
+        start_time = time.time()
+
+    while GPIO.input(ECHO2) == 1:
         end_time = time.time()
 
     # Calculate the distance based on the speed of sound
@@ -96,8 +117,8 @@ try:
 
     # Drive forward until an obstacle is detected within 20 cm
     while True:
-        distance1 = measure_distance(TRIG1, ECHO1)
-        distance2 = measure_distance(TRIG2, ECHO2)
+        distance1 = measure_distance1()
+        distance2 = measure_distance2()
         print(f"Distance: {distance1:.2f} cm")
         print(f"Distance: {distance2:.2f} cm")
         
