@@ -112,9 +112,11 @@ def measure_distance2():
     return distance
 
 try:
-    desired_distance = 10
+    desired_distance = 20
     kp = 2
     distance_readings = deque(maxlen=5)
+    last_valid_distance = None
+    max_change_threshold = 3
     
     # Start the motors driving forward at 50% speed
     drive_forward(100)
@@ -124,25 +126,32 @@ try:
     while True:
         distance1 = measure_distance1()
         distance2 = measure_distance2()
-        print(f"Distance: {distance1:.2f} cm")
-        print(f"Distance: {distance2:.2f} cm")
+        print(f"Distance1: {distance1:.2f} cm")
+        print(f"Distance2: {distance2:.2f} cm")
 
-        distance_readings.append(distance2)
-        average_distance = sum(distance_readings)/len(distance_readings)
-        wall_error = average_distance - desired_distance
-        adjustment = kp * wall_error
+        # Check if the new reading is within the allowed change threshold
+        if last_valid_distance is None or abs(distance2 - last_valid_distance) <= max_change_threshold:
+            distance_readings.append(distance2)
+            last_valid_distance = distance2  # Update the last valid reading
+        else:
+            print(f"Ignored outlier reading: {distance2:.2f} cm")
 
-        # Adjust motor speeds within the high range, ensuring they remain at or near 100%
-        right_motor_speed = 100 - min(max(adjustment, -20), 20)  # Adjust between 80% to 100%
-        left_motor_speed = 100 + min(max(adjustment, -20), 20)
-        
-        # Ensure PWM values are within 0 to 100 range
-        right_motor_speed = max(0, min(100, right_motor_speed))
-        left_motor_speed = max(0, min(100, left_motor_speed))
-
-        # Set the PWM duty cycle to adjust motor speeds
-        pwm1.ChangeDutyCycle(right_motor_speed)
-        pwm2.ChangeDutyCycle(left_motor_speed)
+        if len(distance_readings) > 0:
+            average_distance = sum(distance_readings)/len(distance_readings)
+            wall_error = average_distance - desired_distance
+            adjustment = kp * wall_error
+    
+            # Adjust motor speeds within the high range, ensuring they remain at or near 100%
+            right_motor_speed = 100 - min(max(adjustment, -20), 20)  # Adjust between 80% to 100%
+            left_motor_speed = 100 + min(max(adjustment, -20), 20)
+            
+            # Ensure PWM values are within 0 to 100 range
+            right_motor_speed = max(0, min(100, right_motor_speed))
+            left_motor_speed = max(0, min(100, left_motor_speed))
+    
+            # Set the PWM duty cycle to adjust motor speeds
+            pwm1.ChangeDutyCycle(right_motor_speed)
+            pwm2.ChangeDutyCycle(left_motor_speed)
         
         if distance1 < 20:
             print("Obstacle detected! Stopping motors.")
