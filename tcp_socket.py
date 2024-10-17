@@ -1,18 +1,14 @@
-# server.py
 import socket
 
-server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server_socket.bind(('192.168.4.1', 8080))  # Replace with your Raspberry Pi IP
-server_socket.listen(1)
-
-print("Waiting for a connection...")
-conn, addr = server_socket.accept()
-print(f"Connected to {addr}")
+# Set up the client to connect to the MacBook server
+client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+client_socket.connect(('192.168.2.1', 8080))  # Use your MacBook's IP address
 
 while True:
-    data = conn.recv(1024).decode()
+    data = client_socket.recv(1024).decode()  # Receive the positional data
     if not data:
         break
-    print(f"Received: {data}")
+    # Print or process the received data
+    print(f"Received positional data: {data}")
 
-conn.close()
+client_socket.close()
