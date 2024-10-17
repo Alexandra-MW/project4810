@@ -1,8 +1,11 @@
 import socket
 import RPi.GPIO as GPIO
 import time
+from simple_pid import PID
 
-# Set up motor pins (replace with actual GPIO pin numbers)
+# Define motor control pins 
+ENABLE_LEFT = 12  # Enable pin for left motor
+ENABLE_RIGHT = 13  # Enable pin for right motor
 MOTOR_LEFT_FORWARD = 17  # Left motor forward
 MOTOR_LEFT_BACKWARD = 27  # Left motor backward
 MOTOR_RIGHT_FORWARD = 22  # Right motor forward
@@ -11,53 +14,63 @@ COLLECTION_MOTOR = 5  # Collection wheel motor
 
 # Set up GPIO mode and pins
 GPIO.setmode(GPIO.BCM)
+GPIO.setup(ENABLE_LEFT, GPIO.OUT)
+GPIO.setup(ENABLE_RIGHT, GPIO.OUT)
 GPIO.setup(MOTOR_LEFT_FORWARD, GPIO.OUT)
 GPIO.setup(MOTOR_LEFT_BACKWARD, GPIO.OUT)
 GPIO.setup(MOTOR_RIGHT_FORWARD, GPIO.OUT)
 GPIO.setup(MOTOR_RIGHT_BACKWARD, GPIO.OUT)
 GPIO.setup(COLLECTION_MOTOR, GPIO.OUT)
 
-# PWM Setup for motors and collection wheel
-pwm_left_forward = GPIO.PWM(MOTOR_LEFT_FORWARD, 1000)
-pwm_right_forward = GPIO.PWM(MOTOR_RIGHT_FORWARD, 1000)
-pwm_left_backward = GPIO.PWM(MOTOR_LEFT_BACKWARD, 1000)
-pwm_right_backward = GPIO.PWM(MOTOR_RIGHT_BACKWARD, 1000)
+# PWM setup for enable pins and collection motor
+pwm_enable_left = GPIO.PWM(ENABLE_LEFT, 1000)
+pwm_enable_right = GPIO.PWM(ENABLE_RIGHT, 1000)
 pwm_collection = GPIO.PWM(COLLECTION_MOTOR, 1000)
 
 # Start collection motor and drive motors at 100%
-pwm_left_forward.start(100)
-pwm_right_forward.start(100)
+pwm_enable_left.start(100)
+pwm_enable_right.start(100)
 pwm_collection.start(100)
 
-# Variables for rover control
+# PID controller for straight driving
+pid = PID(Kp=1.0, Ki=0.1, Kd=0.05, setpoint=0)  # Adjust PID values as necessary
+pid.output_limits = (-50, 50)  # Limit adjustments to -50% to +50%
+
+# Mission control variables
 current_run = 0
 direction = "forward"
 u_turn = False
 snake_sign_active = False
 
-# Tolerances for straight driving
+# Tolerances for driving straight
 STRAIGHT_TOLERANCE = 0.01  # 1 cm deviation
-PWM_ADJUST_STEP = 5  # Adjust motors by 5% to correct course
 
-# TCP client to receive positional data from the MacBook
+# Set up TCP client to receive positional data
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client_socket.connect(('192.168.2.1', 8080))  # IP of MacBook 
+client_socket.connect(('192.168.2.1', 8080))  # IP of MacBook (server)
 
+# Motor control functions
 def drive_forward():
-    pwm_left_forward.ChangeDutyCycle(100)
-    pwm_right_forward.ChangeDutyCycle(100)
+    GPIO.output(MOTOR_LEFT_FORWARD, GPIO.HIGH)
+    GPIO.output(MOTOR_RIGHT_FORWARD, GPIO.HIGH)
+    pwm_enable_left.ChangeDutyCycle(100)
+    pwm_enable_right.ChangeDutyCycle(100)
 
 def stop_motors():
-    pwm_left_forward.ChangeDutyCycle(0)
-    pwm_right_forward.ChangeDutyCycle(0)
+    pwm_enable_left.ChangeDutyCycle(0)
+    pwm_enable_right.ChangeDutyCycle(0)
 
 def turn_left():
-    pwm_left_forward.ChangeDutyCycle(0)
-    pwm_right_forward.ChangeDutyCycle(100)
+    GPIO.output(MOTOR_LEFT_FORWARD, GPIO.LOW)
+    GPIO.output(MOTOR_RIGHT_FORWARD, GPIO.HIGH)
+    pwm_enable_left.ChangeDutyCycle(0)
+    pwm_enable_right.ChangeDutyCycle(100)
 
 def turn_right():
-    pwm_left_forward.ChangeDutyCycle(100)
-    pwm_right_forward.ChangeDutyCycle(0)
+    GPIO.output(MOTOR_LEFT_FORWARD, GPIO.HIGH)
+    GPIO.output(MOTOR_RIGHT_FORWARD, GPIO.LOW)
+    pwm_enable_left.ChangeDutyCycle(100)
+    pwm_enable_right.ChangeDutyCycle(0)
 
 def u_turn_rover():
     global u_turn
@@ -72,33 +85,27 @@ def deposit_collection():
     pwm_collection.ChangeDutyCycle(0)
 
 def adjust_for_straightness(delta_x):
-    """ Adjusts motor speeds to keep rover driving straight based on x-axis data. """
-    if abs(delta_x) > STRAIGHT_TOLERANCE:
-        if delta_x > 0:  # Rover drifting to the right, slow left motor
-            pwm_left_forward.ChangeDutyCycle(100 - PWM_ADJUST_STEP)
-            pwm_right_forward.ChangeDutyCycle(100)
-        else:  # Rover drifting to the left, slow right motor
-            pwm_left_forward.ChangeDutyCycle(100)
-            pwm_right_forward.ChangeDutyCycle(100 - PWM_ADJUST_STEP)
-    else:
-        # If within tolerance, set motors back to 100%
-        pwm_left_forward.ChangeDutyCycle(100)
-        pwm_right_forward.ChangeDutyCycle(100)
+    """ Adjust motor speeds to keep the rover driving straight using PID """
+    correction = pid(delta_x)  # Get correction from PID controller
+    # Adjust motor speeds based on PID output
+    pwm_enable_left.ChangeDutyCycle(100 - correction)
+    pwm_enable_right.ChangeDutyCycle(100 + correction)
 
+# Main mission loop
 try:
     while True:
-        # Receive positional data
+        # Receive positional data from MacBook
         data = client_socket.recv(1024).decode()
         if not data:
             break
         delta_x, delta_y, delta_z = map(float, data.split(","))
 
-        # Adjust the motors based on x-axis deviation to drive straight
+        # Adjust motors to keep the rover straight
         adjust_for_straightness(delta_x)
 
-        # Drive forward/backward based on Z-axis data
+        # Driving logic based on Z-axis (forward/backward)
         if direction == "forward":
-            if delta_z >= 1.8:
+            if delta_z >= 1.8:  # Forward limit reached
                 stop_motors()
                 u_turn_rover()
                 current_run += 1
@@ -106,7 +113,7 @@ try:
             else:
                 drive_forward()
         elif direction == "backward":
-            if delta_z <= 0:
+            if delta_z <= 0:  # Backward limit reached
                 stop_motors()
                 u_turn_rover()
                 current_run += 1
@@ -116,27 +123,25 @@ try:
 
         # Snake sign logic (stop motors and collection motor for 30 seconds)
         if snake_sign_active and (delta_z >= 1.8 or delta_z <= 0):
-            print("Snake sign active, stopping for 30 seconds.")
             stop_motors()
             pwm_collection.ChangeDutyCycle(0)  # Stop collection motor
             time.sleep(30)
             snake_sign_active = False
             pwm_collection.ChangeDutyCycle(100)  # Restart collection motor
 
-        # Adjust position for next pass (X-axis)
+        # Shift X-axis for the next pass after a U-turn
         if delta_z <= 0 and direction == "backward":
-            delta_x += (current_run * 0.1)  # Shift 10cm after each pass
-            if delta_x >= 1.9:
+            delta_x += (current_run * 0.1)  # Shift 10 cm after each pass
+            if delta_x >= 1.9:  # Complete 10 passes (back and forth)
                 print("Mission complete. Returning to deposit zone.")
-                # Turn 90 degrees and drive back to deposit zone
-                turn_right()  # Adjust turn based on rover's initial orientation
+                turn_right()  # Example: adjust turn based on start orientation
                 time.sleep(1)  # Adjust for turning 90 degrees
                 drive_forward()
-                time.sleep(2)  # Adjust time for driving 1.8 meters
+                time.sleep(2)  # Drive 1.8 meters back to deposit zone
                 deposit_collection()
                 break
 
-        # Check for keyboard commands (e.g., 's' for snake, 'd' for deposit)
+        # Handle keyboard commands from MacBook (s = snake, d = deposit)
         if data == 's':  # Snake sign command received
             snake_sign_active = True
         elif data == 'd':  # Deposit sign command received
@@ -146,6 +151,6 @@ except KeyboardInterrupt:
     print("Mission interrupted.")
 
 finally:
-    # Clean up GPIO and close socket connection
+    # Clean up GPIO and close socket
     client_socket.close()
     GPIO.cleanup()
