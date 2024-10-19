@@ -1,3 +1,5 @@
+import time
+
 class CustomPID:
     def __init__(self, Kp, Ki, Kd, setpoint, output_limits=(-70, 70)):
         self.Kp = Kp  # Proportional gain
