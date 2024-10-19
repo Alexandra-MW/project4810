@@ -87,9 +87,9 @@ def u_turn_rover():
 def deposit_collection():
     pwm_collection.ChangeDutyCycle(0)
 
-def adjust_for_straightness(delta_z):
+def adjust_for_straightness(delta_x):
     """ Adjust motor speeds to keep the rover driving straight using CustomPID """
-    correction = pid.update(delta_z)  # Get correction from your custom PID controller
+    correction = pid.update(delta_x)  # Get correction from your custom PID controller
     left_pwm = max(70, min(100, 100 - correction))  # Constrain between 70 and 100
     right_pwm = max(70, min(100, 100 + correction))  # Constrain between 70 and 100
     # Adjust motor speeds based on PID output
@@ -106,11 +106,11 @@ try:
         delta_x, delta_y, delta_z = map(float, data.split(","))
 
         # Adjust motors to keep the rover straight
-        adjust_for_straightness(delta_z)
+        adjust_for_straightness(delta_x)
 
         # Driving logic based on Z-axis (forward/backward)
         if direction == "forward":
-            if delta_x >= 0.5:  # Forward limit reached
+            if delta_y >= 1:  # Forward limit reached
                 stop_motors()
                 u_turn_rover()
                 current_run += 1
@@ -118,7 +118,7 @@ try:
             else:
                 drive_forward()
         elif direction == "backward":
-            if delta_x <= 0:  # Backward limit reached
+            if delta_y <= 0:  # Backward limit reached
                 stop_motors()
                 u_turn_rover()
                 current_run += 1
@@ -127,7 +127,7 @@ try:
                 drive_forward()
 
         # Snake sign logic (stop motors and collection motor for 30 seconds)
-        if snake_sign_active and (delta_x >= 0.5 or delta_x <= 0):
+        if snake_sign_active and (delta_y >= 2 or delta_y <= 0):
             stop_motors()
             pwm_collection.ChangeDutyCycle(0)  # Stop collection motor
             time.sleep(30)
@@ -135,9 +135,9 @@ try:
             pwm_collection.ChangeDutyCycle(100)  # Restart collection motor
 
         # Shift X-axis for the next pass after a U-turn
-        if delta_x <= 0 and direction == "backward":
-            delta_z += (current_run * 0.1)  # Shift 10 cm after each pass
-            if delta_z >= 1:  # Complete 10 passes (back and forth)
+        if delta_y <= 0 and direction == "backward":
+            delta_x += (current_run * 0.1)  # Shift 10 cm after each pass
+            if delta_x >= 1:  # Complete 10 passes (back and forth)
                 print("Mission complete. Returning to deposit zone.")
                 turn_right()  # Example: adjust turn based on start orientation
                 time.sleep(1)  # Adjust for turning 90 degrees
