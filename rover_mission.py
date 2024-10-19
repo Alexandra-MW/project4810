@@ -1,7 +1,7 @@
 import socket
 import RPi.GPIO as GPIO
 import time
-from simple_pid import PID
+from pid_controller import CustomPID  # Import your custom PID controller
 
 # Define motor control pins 
 ENA = 7   # Enable pin for right motor
@@ -12,7 +12,7 @@ MOTOR_RIGHT_BACKWARD = 16  # Left motor backward
 MOTOR_LEFT_FORWARD = 27  # Right motor forward
 MOTOR_LEFT_BACKWARD = 17  # Right motor backward
 COLLECTION_MOTOR_1 = 12  # Collection wheel motor IN1
-COLLECTION_MOTOR_2 = 20 #Collection wheel motor IN2
+COLLECTION_MOTOR_2 = 20  # Collection wheel motor IN2
 
 # Set up GPIO mode and pins
 GPIO.setmode(GPIO.BCM)
@@ -34,11 +34,10 @@ pwm_collection = GPIO.PWM(ENC, 1000)
 # Start collection motor and drive motors at 100%
 pwm_enable_left.start(100)
 pwm_enable_right.start(100)
-#pwm_collection.start(100) #Turned off for navigation testing 
 
-# PID controller for straight driving
-pid = PID(Kp=1.0, Ki=0.1, Kd=0.05, setpoint=0)  # Adjust PID values as necessary
-pid.output_limits = (-70, 70)  # Limit adjustments to -50% to +50%
+# PID controller for straight driving using custom PID class
+pid = CustomPID(Kp=1.0, Ki=0.1, Kd=0.05, setpoint=0)
+pid.output_limits = (-70, 70)  # Limit adjustments to -70% to +70%
 
 # Mission control variables
 current_run = 0
@@ -89,8 +88,8 @@ def deposit_collection():
     pwm_collection.ChangeDutyCycle(0)
 
 def adjust_for_straightness(delta_z):
-    """ Adjust motor speeds to keep the rover driving straight using PID """
-    correction = pid(delta_z)  # Get correction from PID controller
+    """ Adjust motor speeds to keep the rover driving straight using CustomPID """
+    correction = pid.update(delta_z)  # Get correction from your custom PID controller
     # Adjust motor speeds based on PID output
     pwm_enable_left.ChangeDutyCycle(100 - correction)
     pwm_enable_right.ChangeDutyCycle(100 + correction)
