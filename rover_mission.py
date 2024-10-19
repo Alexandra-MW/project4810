@@ -50,7 +50,7 @@ STRAIGHT_TOLERANCE = 0.02  # 1 cm deviation
 
 # Set up TCP client to receive positional data
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client_socket.connect(('192.168.2.1', 8080))  # IP of MacBook (server)
+client_socket.connect(('192.168.2.1', 9001))  # IP of MacBook (server) 8080 works
 
 # Motor control functions
 def drive_forward():
@@ -90,9 +90,11 @@ def deposit_collection():
 def adjust_for_straightness(delta_z):
     """ Adjust motor speeds to keep the rover driving straight using CustomPID """
     correction = pid.update(delta_z)  # Get correction from your custom PID controller
+    left_pwm = max(70, min(100, 100 - correction))  # Constrain between 70 and 100
+    right_pwm = max(70, min(100, 100 + correction))  # Constrain between 70 and 100
     # Adjust motor speeds based on PID output
-    pwm_enable_left.ChangeDutyCycle(100 - correction)
-    pwm_enable_right.ChangeDutyCycle(100 + correction)
+    pwm_enable_left.ChangeDutyCycle(left_pwm)
+    pwm_enable_right.ChangeDutyCycle(right_pwm)
 
 # Main mission loop
 try:
